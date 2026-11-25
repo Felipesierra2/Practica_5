@@ -1,13 +1,14 @@
 #include "pared.h"
-#include <QBrush>
-#include <QPen>
 
 Pared::Pared(const QRectF& dimensiones, TipoPared tipo)
-    : QGraphicsRectItem(dimensiones),
+    : dimensiones(dimensiones),
     tipo(tipo)
 {
-    setBrush(QColor(120, 120, 120));
-    setPen(Qt::NoPen);
+}
+
+QRectF Pared::obtenerLimites() const
+{
+    return dimensiones;
 }
 
 TipoPared Pared::obtenerTipo() const
@@ -21,11 +22,11 @@ bool Pared::detectarColision(
     if (!particula || !particula->estaLanzada())
         return false;
 
-    const QPointF centro = particula->scenePos();
+    const QPointF centro = particula->pos();
 
     const qreal radio = particula->obtenerRadio();
 
-    const QRectF limites = sceneBoundingRect();
+    const QRectF limites = obtenerLimites();
 
     switch (tipo)
     {
@@ -54,7 +55,7 @@ void Pared::resolverColision(Particula* particula) const
     QPointF velocidad = particula->obtenerVelocidad();
 
     const qreal radio = particula->obtenerRadio();
-    const QRectF limites = sceneBoundingRect();
+    const QRectF limites = obtenerLimites();
 
     switch (tipo)
     {

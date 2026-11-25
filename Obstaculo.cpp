@@ -1,17 +1,17 @@
 #include "obstaculo.h"
-#include <QBrush>
-#include <QPen>
 #include <QtMath>
-#include <QDebug>
 
 Obstaculo::Obstaculo(const QRectF& dimensiones,
                      qreal coeficienteRestitucion)
-    : QGraphicsRectItem(dimensiones),
+    : dimensiones(dimensiones),
     coeficienteRestitucion(
         qBound(0.0, coeficienteRestitucion, 1.0))
 {
-    setBrush(QColor(162, 120, 76));
-    setPen(Qt::NoPen);
+}
+
+QRectF Obstaculo::obtenerLimites() const
+{
+    return dimensiones;
 }
 
 qreal Obstaculo::obtenerCoeficienteRestitucion() const
@@ -22,7 +22,7 @@ qreal Obstaculo::obtenerCoeficienteRestitucion() const
 QPointF Obstaculo::calcularPuntoMasCercano(
     const QPointF& centro) const
 {
-    const QRectF limites = sceneBoundingRect();
+    const QRectF limites = obtenerLimites();
 
     qreal x = qBound(
         limites.left(),
@@ -45,7 +45,7 @@ bool Obstaculo::detectarColision(
     if (!particula || !particula->estaLanzada())
         return false;
 
-    const QPointF centro = particula->scenePos();
+    const QPointF centro = particula->pos();
 
     const QPointF puntoCercano =
         calcularPuntoMasCercano(centro);
@@ -63,7 +63,7 @@ bool Obstaculo::detectarColision(
 QPointF Obstaculo::calcularNormalColision(
     const Particula* particula) const
 {
-    const QPointF centro = particula->scenePos();
+    const QPointF centro = particula->pos();
 
     const QPointF puntoCercano =
         calcularPuntoMasCercano(centro);
@@ -80,7 +80,7 @@ QPointF Obstaculo::calcularNormalColision(
         return normal / magnitud;
     }
 
-    const QRectF limites = sceneBoundingRect();
+    const QRectF limites = obtenerLimites();
 
     qreal distanciaIzquierda =
         centro.x() - limites.left();
@@ -123,7 +123,7 @@ void Obstaculo::resolverColision(Particula* particula) const
     if (!detectarColision(particula))
         return;
 
-    const QPointF centro = particula->scenePos();
+    const QPointF centro = particula->pos();
 
     const QPointF normal =
         calcularNormalColision(particula);
@@ -148,7 +148,7 @@ void Obstaculo::resolverColision(Particula* particula) const
     }
     else
     {
-        const QRectF limites = sceneBoundingRect();
+        const QRectF limites = obtenerLimites();
 
         if (normal.x() < 0)
             penetracion = radio + centro.x() - limites.left();

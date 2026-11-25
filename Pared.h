@@ -1,9 +1,8 @@
 #ifndef PARED_H
 #define PARED_H
 
-#include <QGraphicsRectItem>
+#include <QRectF>
 #include <QString>
-
 #include "particula.h"
 
 enum class TipoPared
@@ -14,7 +13,7 @@ enum class TipoPared
     INFERIOR
 };
 
-class Pared : public QGraphicsRectItem
+class Pared
 {
 public:
     Pared(const QRectF& dimensiones, TipoPared tipo);
@@ -27,11 +26,15 @@ public:
 
     QString obtenerNombre() const;
 
+    QRectF obtenerLimites() const;
+
 private:
+    QRectF dimensiones;
+
     TipoPared tipo;
 
     static constexpr qreal COEFICIENTE_RESTITUCION = 1.0;
 };
 
-#endif // PARED_H
+#endif
 

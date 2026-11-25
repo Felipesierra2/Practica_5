@@ -1,14 +1,10 @@
-#include "mainwindow.h"
+#include "simulacion.h"
 
-#include <QApplication>
-#include "juego.h"
-
-int main(int argc, char *argv[])
+int main()
 {
-    QApplication a(argc, argv);
+    Simulacion simulacion;
 
-    Juego juego;
-    juego.show();
+    simulacion.ejecutar();
 
-    return a.exec();
+    return 0;
 }

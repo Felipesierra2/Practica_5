@@ -1,11 +1,11 @@
 #ifndef OBSTACULO_H
 #define OBSTACULO_H
 
-#include <QGraphicsRectItem>
+#include <QRectF>
 #include <QPointF>
 #include "particula.h"
 
-class Obstaculo : public QGraphicsRectItem
+class Obstaculo
 {
 public:
     Obstaculo(const QRectF& dimensiones,
@@ -17,7 +17,11 @@ public:
 
     qreal obtenerCoeficienteRestitucion() const;
 
+    QRectF obtenerLimites() const;
+
 private:
+    QRectF dimensiones;
+
     qreal coeficienteRestitucion;
 
     QPointF calcularPuntoMasCercano(
@@ -27,4 +31,4 @@ private:
         const Particula* particula) const;
 };
 
-#endif // OBSTACULO_H
+#endif

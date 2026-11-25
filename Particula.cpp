@@ -1,29 +1,18 @@
 #include "particula.h"
-#include <QBrush>
-#include <QPen>
 #include <QtMath>
-#include <QDebug>
 
 int Particula::siguienteIdentificador = 1;
 
-Particula::Particula(
-    qreal masa,
-    qreal radio,
-    const QPointF& posicionInicial)
-    : QGraphicsEllipseItem(-radio, -radio,
-                           2 * radio, 2 * radio),
-    masa(masa),
+Particula::Particula(qreal masa, qreal radio,
+                     const QPointF& posicionInicial)
+    : masa(masa),
     radio(radio),
+    posicion(posicionInicial),
     velocidad(0, 0),
     aceleracion(0, GRAVEDAD),
     lanzada(false),
     identificador(siguienteIdentificador++)
 {
-    setPos(posicionInicial);
-    setBrush(Qt::blue);
-    setPen(Qt::NoPen);
-
-    qDebug() << "Particula creada. ID:" << identificador;
 }
 
 Particula::Particula(qreal masa,
@@ -34,13 +23,21 @@ Particula::Particula(qreal masa,
 {
     velocidad = velocidadInicial;
     lanzada = true;
-
-    setBrush(Qt::green);
 }
 
 bool Particula::estaLanzada() const
 {
     return lanzada;
+}
+
+QPointF Particula::pos() const
+{
+    return posicion;
+}
+
+void Particula::setPos(const QPointF& nuevaPosicion)
+{
+    posicion = nuevaPosicion;
 }
 
 bool Particula::detectarColision(
@@ -52,8 +49,8 @@ bool Particula::detectarColision(
     if (!estaLanzada() || !otra->estaLanzada())
         return false;
 
-    const QPointF centro1 = scenePos();
-    const QPointF centro2 = otra->scenePos();
+    const QPointF centro1 = pos();
+    const QPointF centro2 = otra->pos();
 
     const qreal dx = centro2.x() - centro1.x();
     const qreal dy = centro2.y() - centro1.y();
