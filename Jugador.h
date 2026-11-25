@@ -40,7 +40,6 @@ private:
     QGraphicsEllipseItem* base;
 
     void actualizarCanon();
-
 public:
     explicit Jugador(bool mirandoDerecha,
                      QGraphicsItem* parent = nullptr);
@@ -48,6 +47,8 @@ public:
     void modificarAngulo(qreal incremento);
     void modificarRapidez(qreal incremento);
     void recibirDano(qreal cantidad);
+    void reiniciar();
+
 
     qreal obtenerVida() const;
     qreal obtenerAngulo() const;

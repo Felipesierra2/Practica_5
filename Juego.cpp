@@ -11,11 +11,6 @@ Juego::Juego(QWidget* parent)
     : QGraphicsView(parent),
     escena(new QGraphicsScene(this)),
     temporizador(new QTimer(this)),
-    particulaActual(nullptr),
-    posicionLanzamiento(50, 550),
-    anguloLanzamiento(45.0),
-    rapidezLanzamiento(20.0),
-    tiempoSimulacion(0.0),
     partidaFinalizada(false)
 {
     inicializarEscenario();
@@ -26,14 +21,6 @@ Juego::Juego(QWidget* parent)
 
     connect(temporizador, &QTimer::timeout,
             this, &Juego::actualizarJuego);
-
-    if (!registro.abrirArchivo("simulacion.txt"))
-    {
-        qDebug() << "No se pudo iniciar el registro.";
-    }
-
-    qDebug() << "Ruta del archivo:"
-             << QDir::current().absoluteFilePath("simulacion.txt");
 
     reloj.start();
     temporizador->start(16);
@@ -55,28 +42,41 @@ void Juego::inicializarEscenario()
     setFocusPolicy(Qt::StrongFocus);
 }
 
-void Juego::crearParticula()
+Particula* Juego::crearParticula()
 {
     if (!jugadorActual)
-        return;
+        return nullptr;
 
     QPointF posicionInicial =
         jugadorActual->obtenerPosicionLanzamiento();
 
-    particulaActual = new Particula(
+    Particula* nuevaParticula = new Particula(
         1.0,
         10.0,
         posicionInicial
         );
 
-    escena->addItem(particulaActual);
+    escena->addItem(nuevaParticula);
 
-    particulas.append(particulaActual);
+    particulas.append(nuevaParticula);
+
+    return nuevaParticula;
 }
 
 void Juego::keyPressEvent(QKeyEvent* evento)
 {
-    if (partidaFinalizada || !jugadorActual)
+    if (partidaFinalizada)
+    {
+        if (evento->key() == Qt::Key_R &&
+            !evento->isAutoRepeat())
+        {
+            reiniciarPartida();
+        }
+
+        return;
+    }
+
+    if (!jugadorActual)
         return;
 
     switch (evento->key())
@@ -117,8 +117,6 @@ void Juego::actualizarJuego()
 
     deltaTiempo = qMin(deltaTiempo, 0.05);
 
-    tiempoSimulacion += deltaTiempo;
-
     for (Particula* particula : particulas)
     {
         particula->actualizarMovimiento(deltaTiempo);
@@ -132,32 +130,24 @@ void Juego::actualizarJuego()
 
     comprobarColisionesJugadores();
 
-    registrarPosiciones();
+    eliminarParticulasFueraEscenario();
 
     comprobarFinPartida();
 }
 
 void Juego::dispararParticula()
 {
-    if (!jugadorActual)
+    if (partidaFinalizada || !jugadorActual)
         return;
 
-    crearParticula();
+    Particula* nuevaParticula = crearParticula();
 
-    if (!particulaActual)
+    if (!nuevaParticula)
         return;
 
-    particulaActual->lanzar(
+    nuevaParticula->lanzar(
         jugadorActual->obtenerVelocidadLanzamiento()
         );
-
-    registro.registrarPosicion(
-        tiempoSimulacion,
-        particulaActual->obtenerIdentificador(),
-        particulaActual->scenePos()
-        );
-
-    particulaActual = nullptr;
 
     cambiarTurno();
 }
@@ -336,15 +326,6 @@ void Juego::comprobarColisionesObstaculos()
                 if (velocidadInicial == velocidadFinal)
                     continue;
 
-                registro.registrarColision(
-                    tiempoSimulacion,
-                    particula->obtenerIdentificador(),
-                    "OBSTACULO",
-                    QString::number(
-                        obstaculo->obtenerCoeficienteRestitucion()
-                        )
-                    );
-
                 qDebug() << "Colision con obstaculo."
                          << "Coeficiente:"
                          << obstaculo->obtenerCoeficienteRestitucion();
@@ -430,13 +411,6 @@ void Juego::comprobarColisionesParedes()
                 if (velocidadInicial == velocidadFinal)
                     continue;
 
-                registro.registrarColision(
-                    tiempoSimulacion,
-                    particula->obtenerIdentificador(),
-                    "PARED",
-                    pared->obtenerNombre()
-                    );
-
                 qDebug() << "Colision con pared:"
                          << pared->obtenerNombre();
 
@@ -458,18 +432,6 @@ void Juego::fusionarParticulas(int indice1, int indice2)
 {
     Particula* primera = particulas.at(indice1);
     Particula* segunda = particulas.at(indice2);
-
-    registro.registrarPosicion(
-        tiempoSimulacion,
-        primera->obtenerIdentificador(),
-        primera->scenePos()
-        );
-
-    registro.registrarPosicion(
-        tiempoSimulacion,
-        segunda->obtenerIdentificador(),
-        segunda->scenePos()
-        );
 
     const qreal energiaInicial =
         primera->calcularEnergiaCinetica() +
@@ -502,13 +464,6 @@ void Juego::fusionarParticulas(int indice1, int indice2)
         radioFinal,
         posicionFinal,
         velocidadFinal
-        );
-
-    registro.registrarFusion(
-        tiempoSimulacion,
-        primera->obtenerIdentificador(),
-        segunda->obtenerIdentificador(),
-        fusionada->obtenerIdentificador()
         );
 
     const QPointF momentoFinal =
@@ -575,21 +530,6 @@ void Juego::fusionarParticulas(int indice1, int indice2)
     qDebug() << "=========================================";
 }
 
-void Juego::registrarPosiciones()
-{
-    for (Particula* particula : particulas)
-    {
-        if (!particula->estaLanzada())
-            continue;
-
-        registro.registrarPosicion(
-            tiempoSimulacion,
-            particula->obtenerIdentificador(),
-            particula->scenePos()
-            );
-    }
-}
-
 void Juego::cambiarTurno()
 {
     if (jugadorActual == jugador1)
@@ -652,12 +592,6 @@ void Juego::comprobarColisionesJugadores()
         const qreal dano = energia * FACTOR_DANO;
 
         jugadorImpactado->recibirDano(dano);
-
-        registro.registrarPosicion(
-            tiempoSimulacion,
-            particula->obtenerIdentificador(),
-            particula->scenePos()
-            );
 
         qDebug() << "========== IMPACTO ==========";
 
@@ -724,18 +658,17 @@ void Juego::finalizarPartida()
         mensaje = "JUGADOR 1 GANA";
     }
 
-    QGraphicsTextItem* resultado =
-        escena->addText(mensaje);
+    mensajeResultado = escena->addText(mensaje);
 
-    resultado->setFont(
+    mensajeResultado->setFont(
         QFont("Arial", 28, QFont::Bold)
         );
 
-    resultado->setDefaultTextColor(Qt::yellow);
+    mensajeResultado->setDefaultTextColor(Qt::yellow);
 
-    QRectF limites = resultado->boundingRect();
+    QRectF limites = mensajeResultado->boundingRect();
 
-    resultado->setPos(
+    mensajeResultado->setPos(
         escena->sceneRect().center().x()
             - limites.width() / 2.0,
 
@@ -743,7 +676,57 @@ void Juego::finalizarPartida()
             - limites.height() / 2.0
         );
 
-    resultado->setZValue(100);
+    mensajeResultado->setZValue(100);
+
+    mensaje += "\nPresiona R para reiniciar";
 
     qDebug() << mensaje;
+}
+
+void Juego::reiniciarPartida()
+{
+    if (!partidaFinalizada)
+        return;
+
+    temporizador->stop();
+
+    // Eliminar las particulas de la partida anterior
+    for (Particula* particula : particulas)
+    {
+        escena->removeItem(particula);
+        delete particula;
+    }
+
+    particulas.clear();
+
+    // Eliminar el mensaje de victoria
+    if (mensajeResultado)
+    {
+        escena->removeItem(mensajeResultado);
+
+        delete mensajeResultado;
+
+        mensajeResultado = nullptr;
+    }
+
+    // Restablecer los jugadores
+    jugador1->reiniciar();
+    jugador2->reiniciar();
+
+    // Restablecer el estado de la partida
+    jugadorActual = jugador1;
+
+    partidaFinalizada = false;
+
+    // Restablecer los indicadores
+    indicadorLanzamiento->setVisible(true);
+
+    actualizarIndicadores();
+
+    // Reactivar la simulacion
+    reloj.restart();
+
+    temporizador->start(16);
+
+    qDebug() << "Nueva partida iniciada.";
 }

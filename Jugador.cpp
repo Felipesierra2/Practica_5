@@ -70,6 +70,17 @@ void Jugador::recibirDano(qreal cantidad)
     actualizarBarraVida();
 }
 
+void Jugador::reiniciar()
+{
+    vida = VIDA_MAXIMA;
+
+    anguloLanzamiento = 45.0;
+    rapidezLanzamiento = 20.0;
+
+    actualizarCanon();
+    actualizarBarraVida();
+}
+
 qreal Jugador::obtenerVida() const
 {
     return vida;

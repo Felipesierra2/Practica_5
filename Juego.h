@@ -13,7 +13,6 @@
 #include "particula.h"
 #include "pared.h"
 #include "obstaculo.h"
-#include "registrosimulacion.h"
 #include "Jugador.h"
 
 class Juego : public QGraphicsView
@@ -23,19 +22,13 @@ class Juego : public QGraphicsView
 public:
     explicit Juego(QWidget* parent = nullptr);
 
-    void crearIndicadores();
-    void actualizarIndicadores();
-    void crearParedes();
-    void crearObstaculos();
-    void comprobarColisionesObstaculos();
-    void comprobarColisionesParticulas();
-
 protected:
     void keyPressEvent(QKeyEvent* evento) override;
 
 private:
     static constexpr qreal FACTOR_DANO = 0.05;
 
+    QGraphicsTextItem* mensajeResultado = nullptr;
     QGraphicsScene* escena;
     QTimer* temporizador;
     QElapsedTimer reloj;
@@ -44,28 +37,30 @@ private:
     QList<Pared*> paredes;
     QList<Obstaculo*> obstaculos;
 
-    Particula* particulaActual;
+    Particula* crearParticula();
 
     QPointF posicionLanzamiento;
 
-    RegistroSimulacion registro;
-    qreal tiempoSimulacion;
     qreal anguloLanzamiento;
-    qreal rapidezLanzamiento;
 
     bool partidaFinalizada;
 
     void comprobarFinPartida();
     void finalizarPartida();
     void inicializarEscenario();
-    void crearParticula();
     void dispararParticula();
     void actualizarJuego();
     void eliminarParticulasFueraEscenario();
     void comprobarColisionesParedes();
     void fusionarParticulas(int indice1, int indice2);
-    void registrarPosiciones();
     void cambiarTurno();
+    void crearIndicadores();
+    void actualizarIndicadores();
+    void crearParedes();
+    void crearObstaculos();
+    void comprobarColisionesObstaculos();
+    void comprobarColisionesParticulas();
+    void reiniciarPartida();
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;
