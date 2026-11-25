@@ -22,6 +22,8 @@ Jugador::Jugador(bool mirandoDerecha, const QColor &color, QGraphicsItem* parent
 
     addToGroup(base);
     addToGroup(canon);
+    crearPlataforma();
+    crearRepresentante(color);
 
     actualizarCanon();
     crearBarraVida();
@@ -103,17 +105,17 @@ bool Jugador::estaDerrotado() const
     return vida <= 0.0;
 }
 
-bool Jugador::detectarImpacto(const Particula* particula) const
+bool Jugador::detectarImpacto(
+    const Particula* particula) const
 {
     if (!particula || estaDerrotado())
         return false;
 
-    return base->collidesWithItem(
+    return representante->collidesWithItem(
         particula,
         Qt::IntersectsItemShape
         );
 }
-
 qreal Jugador::obtenerAngulo() const
 {
     return anguloLanzamiento;
@@ -176,4 +178,46 @@ void Jugador::crearIndicadorTurno()
 void Jugador::establecerTurnoActivo(bool activo)
 {
     indicadorTurno->setVisible(activo);
+}
+
+void Jugador::crearRepresentante(const QColor& color)
+{
+    representante = new QGraphicsRectItem(
+        -15, -40, 30, 40
+        );
+
+    representante->setBrush(color);
+
+    representante->setPen(
+        QPen(color.lighter(150), 2)
+        );
+
+    addToGroup(representante);
+}
+
+void Jugador::establecerPosicionRepresentante(const QPointF& posicion)
+{
+    const QPointF posicionLocal = mapFromScene(posicion);
+
+    representante->setPos(posicionLocal);
+
+    fondoVida->setPos(posicionLocal);
+    barraVida->setPos(posicionLocal);
+}
+
+void Jugador::crearPlataforma()
+{
+    plataforma = new QGraphicsRectItem(
+        -45, 20, 90, 20
+        );
+
+    plataforma->setBrush(QColor(71, 85, 105));
+
+    plataforma->setPen(
+        QPen(QColor(148, 163, 184), 2)
+        );
+
+    addToGroup(plataforma);
+
+    plataforma->setZValue(-1);
 }

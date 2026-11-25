@@ -4,6 +4,7 @@
 #include <QtMath>
 #include <QDebug>
 #include <qvectornd.h>
+#include <QColor>
 
 int Particula::siguienteIdentificador = 1;
 
@@ -17,6 +18,7 @@ Particula::Particula(
     radio(radio),
     velocidad(0, 0),
     aceleracion(0, GRAVEDAD),
+    propietario(0),
     lanzada(false),
     identificador(siguienteIdentificador++)
 {
@@ -42,31 +44,6 @@ Particula::Particula(qreal masa,
 bool Particula::estaLanzada() const
 {
     return lanzada;
-}
-
-bool Particula::detectarColision(
-    const Particula* otra) const
-{
-    if (!otra || otra == this)
-        return false;
-
-    if (!estaLanzada() || !otra->estaLanzada())
-        return false;
-
-    const QPointF centro1 = scenePos();
-    const QPointF centro2 = otra->scenePos();
-
-    const qreal dx = centro2.x() - centro1.x();
-    const qreal dy = centro2.y() - centro1.y();
-
-    const qreal distanciaCuadrada =
-        dx * dx + dy * dy;
-
-    const qreal sumaRadios =
-        radio + otra->obtenerRadio();
-
-    return distanciaCuadrada <=
-           sumaRadios * sumaRadios;
 }
 
 qreal Particula::obtenerMasa() const
@@ -141,4 +118,23 @@ void Particula::establecerVelocidad(
 int Particula::obtenerIdentificador() const
 {
     return identificador;
+}
+
+void Particula::establecerPropietario(int nuevoPropietario)
+{
+    propietario = nuevoPropietario;
+
+    if (propietario == 1)
+        setBrush(QColor(37, 99, 235));
+
+    else if (propietario == 2)
+        setBrush(QColor(220, 38, 38));
+
+    else
+        setBrush(Qt::gray);
+}
+
+int Particula::obtenerPropietario() const
+{
+    return propietario;
 }

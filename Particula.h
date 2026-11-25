@@ -19,9 +19,10 @@ public:
     void lanzar(const QVector2D& velocidadInicial);
     void actualizarMovimiento(qreal deltaTiempo);
     void establecerVelocidad(const QPointF& nuevaVelocidad);
+    void establecerPropietario(int nuevoPropietario);
+    int obtenerPropietario() const;
 
     bool estaLanzada() const;
-    bool detectarColision(const Particula* otra) const;
 
     qreal obtenerMasa() const;
     qreal obtenerRadio() const;
@@ -38,6 +39,8 @@ private:
 
     QPointF velocidad;
     QPointF aceleracion;
+
+    int propietario;
 
     bool lanzada;
 

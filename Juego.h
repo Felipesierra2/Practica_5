@@ -57,14 +57,12 @@ private:
     void actualizarJuego();
     void eliminarParticulasFueraEscenario();
     void comprobarColisionesParedes();
-    void fusionarParticulas(int indice1, int indice2);
     void cambiarTurno();
     void crearIndicadores();
     void actualizarIndicadores();
     void crearParedes();
     void crearObstaculos();
     void comprobarColisionesObstaculos();
-    void comprobarColisionesParticulas();
     void reiniciarPartida();
     void actualizarIndicadorTurno();
 

@@ -43,11 +43,19 @@ private:
     QGraphicsLineItem* canon;
     QGraphicsEllipseItem* base;
 
+    QGraphicsRectItem* representante;
+
+    void crearRepresentante(const QColor& color);
+
     void actualizarCanon();
 
     QGraphicsPolygonItem* indicadorTurno;
 
     void crearIndicadorTurno();
+
+    QGraphicsRectItem* plataforma;
+
+    void crearPlataforma();
 public:
     explicit Jugador(bool mirandoDerecha,
                      const QColor& color,
@@ -59,6 +67,7 @@ public:
     void reiniciar();
     void establecerNombre(const QString& nombre);
     void establecerTurnoActivo(bool activo);
+    void establecerPosicionRepresentante(const QPointF& posicion);
 
 
     qreal obtenerVida() const;

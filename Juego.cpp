@@ -127,8 +127,6 @@ void Juego::actualizarJuego()
 
     comprobarColisionesObstaculos();
 
-    comprobarColisionesParticulas();
-
     comprobarColisionesJugadores();
 
     eliminarParticulasFueraEscenario();
@@ -145,6 +143,10 @@ void Juego::dispararParticula()
 
     if (!nuevaParticula)
         return;
+
+    nuevaParticula->establecerPropietario(
+        jugadorActual == jugador1 ? 1 : 2
+        );
 
     nuevaParticula->lanzar(
         jugadorActual->obtenerVelocidadLanzamiento()
@@ -318,6 +320,9 @@ void Juego::comprobarColisionesObstaculos()
                 qreal energiaInicial =
                     particula->calcularEnergiaCinetica();
 
+                const QPointF momentoInicial =
+                    particula->calcularMomentoLineal();
+
                 obstaculo->resolverColision(particula);
 
                 const QPointF velocidadFinal =
@@ -329,18 +334,19 @@ void Juego::comprobarColisionesObstaculos()
                 if (velocidadInicial == velocidadFinal)
                     continue;
 
-                const qreal rapidezImpacto = qSqrt(
-                    velocidadInicial.x() * velocidadInicial.x() +
-                    velocidadInicial.y() * velocidadInicial.y()
+                const qreal momentoImpacto = qSqrt(
+                    momentoInicial.x() * momentoInicial.x() +
+                    momentoInicial.y() * momentoInicial.y()
                     );
-
-                const qreal momentoImpacto =
-                    particula->obtenerMasa() * rapidezImpacto;
 
                 const qreal dano =
                     FACTOR_DANO_ESTRUCTURAL * momentoImpacto;
 
-                obstaculo->recibirDano(dano);
+                if (particula->obtenerPropietario() !=
+                    obstaculo->obtenerPropietario())
+                {
+                    obstaculo->recibirDano(dano);
+                }
 
                 qDebug() << "Momento lineal de impacto:"
                          << momentoImpacto << "kg*m/s";
@@ -359,25 +365,6 @@ void Juego::comprobarColisionesObstaculos()
 
                 qDebug() << "Energia perdida:"
                          << energiaInicial - energiaFinal << "J";
-            }
-        }
-    }
-}
-
-void Juego::comprobarColisionesParticulas()
-{
-    for (int i = 0; i < particulas.size(); i++)
-    {
-        Particula* primera = particulas.at(i);
-
-        for (int j = i + 1; j < particulas.size(); j++)
-        {
-            Particula* segunda = particulas.at(j);
-
-            if (primera->detectarColision(segunda))
-            {
-                fusionarParticulas(i, j);
-                return;
             }
         }
     }
@@ -449,108 +436,6 @@ void Juego::comprobarColisionesParedes()
     }
 }
 
-void Juego::fusionarParticulas(int indice1, int indice2)
-{
-    Particula* primera = particulas.at(indice1);
-    Particula* segunda = particulas.at(indice2);
-
-    const qreal energiaInicial =
-        primera->calcularEnergiaCinetica() +
-        segunda->calcularEnergiaCinetica();
-
-    const qreal masa1 = primera->obtenerMasa();
-    const qreal masa2 = segunda->obtenerMasa();
-
-    const qreal masaFinal = masa1 + masa2;
-
-    const QPointF momentoInicial =
-        primera->calcularMomentoLineal() +
-        segunda->calcularMomentoLineal();
-
-    const QPointF velocidadFinal =
-        momentoInicial / masaFinal;
-
-    const qreal radio1 = primera->obtenerRadio();
-    const qreal radio2 = segunda->obtenerRadio();
-
-    const qreal radioFinal =
-        qSqrt(radio1 * radio1 + radio2 * radio2);
-
-    const QPointF posicionFinal =
-        (primera->scenePos() * masa1 +
-         segunda->scenePos() * masa2) / masaFinal;
-
-    Particula* fusionada = new Particula(
-        masaFinal,
-        radioFinal,
-        posicionFinal,
-        velocidadFinal
-        );
-
-    const QPointF momentoFinal =
-        fusionada->calcularMomentoLineal();
-
-    const qreal energiaFinal =
-        fusionada->calcularEnergiaCinetica();
-
-    const QPointF diferenciaMomento =
-        momentoFinal - momentoInicial;
-
-    const qreal energiaPerdida =
-        energiaInicial - energiaFinal;
-
-    // Retirar las particulas originales de la lista
-    particulas.removeAt(indice2);
-    particulas.removeAt(indice1);
-
-    // Retirar las particulas de la escena
-    escena->removeItem(primera);
-    escena->removeItem(segunda);
-
-    // Liberar la memoria
-    delete primera;
-    delete segunda;
-
-    // Incorporar la nueva particula
-    escena->addItem(fusionada);
-    particulas.append(fusionada);
-
-
-    qDebug() << "========== FUSION DE PARTICULAS ==========";
-
-    qDebug() << "Masa resultante:"
-             << masaFinal << "kg";
-
-    qDebug() << "Radio resultante:"
-             << radioFinal << "px";
-
-    qDebug() << "Velocidad resultante:"
-             << velocidadFinal << "m/s";
-
-    qDebug() << "Momento lineal inicial:"
-             << momentoInicial << "kg*m/s";
-
-    qDebug() << "Momento lineal final:"
-             << momentoFinal << "kg*m/s";
-
-    qDebug() << "Diferencia de momento:"
-             << diferenciaMomento << "kg*m/s";
-
-    qDebug() << "Energia inicial:"
-             << energiaInicial << "J";
-
-    qDebug() << "Energia final:"
-             << energiaFinal << "J";
-
-    qDebug() << "Energia perdida:"
-             << energiaPerdida << "J";
-
-    qDebug() << "Particulas restantes:"
-             << particulas.size();
-
-    qDebug() << "=========================================";
-}
-
 void Juego::cambiarTurno()
 {
     if (jugadorActual == jugador1)
@@ -585,6 +470,14 @@ void Juego::crearJugadores()
     escena->addItem(jugador1);
     escena->addItem(jugador2);
 
+    jugador1->establecerPosicionRepresentante(
+        QPointF(180, 585)
+        );
+
+    jugador2->establecerPosicionRepresentante(
+        QPointF(620, 585)
+        );
+
     jugadorActual = jugador1;
     actualizarIndicadorTurno();
 }
@@ -600,11 +493,16 @@ void Juego::comprobarColisionesJugadores()
 
         Jugador* jugadorImpactado = nullptr;
 
-        if (jugador1->detectarImpacto(particula))
+        if (particula->obtenerPropietario() != 1 &&
+            jugador1->detectarImpacto(particula))
+        {
             jugadorImpactado = jugador1;
-
-        else if (jugador2->detectarImpacto(particula))
+        }
+        else if (particula->obtenerPropietario() != 2 &&
+                 jugador2->detectarImpacto(particula))
+        {
             jugadorImpactado = jugador2;
+        }
 
         if (!jugadorImpactado)
             continue;
