@@ -3,6 +3,7 @@
 #include <QPen>
 #include <QtMath>
 #include <QDebug>
+#include <qvectornd.h>
 
 int Particula::siguienteIdentificador = 1;
 
@@ -97,13 +98,22 @@ qreal Particula::calcularEnergiaCinetica() const
 
 void Particula::lanzar(qreal rapidezInicial, qreal angulo)
 {
+    qreal anguloRadianes = qDegreesToRadians(angulo);
+
+    QVector2D velocidadInicial(
+        rapidezInicial * qCos(anguloRadianes),
+        -rapidezInicial * qSin(anguloRadianes)
+        );
+
+    lanzar(velocidadInicial);
+}
+
+void Particula::lanzar(const QVector2D& velocidadInicial)
+{
     if (lanzada)
         return;
 
-    qreal anguloRadianes = qDegreesToRadians(angulo);
-
-    velocidad.setX(rapidezInicial * qCos(anguloRadianes));
-    velocidad.setY(-rapidezInicial * qSin(anguloRadianes));
+    velocidad = velocidadInicial.toPointF();
 
     lanzada = true;
 }

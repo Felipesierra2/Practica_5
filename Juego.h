@@ -14,6 +14,7 @@
 #include "pared.h"
 #include "obstaculo.h"
 #include "registrosimulacion.h"
+#include "Jugador.h"
 
 class Juego : public QGraphicsView
 {
@@ -33,6 +34,8 @@ protected:
     void keyPressEvent(QKeyEvent* evento) override;
 
 private:
+    static constexpr qreal FACTOR_DANO = 0.05;
+
     QGraphicsScene* escena;
     QTimer* temporizador;
     QElapsedTimer reloj;
@@ -50,6 +53,10 @@ private:
     qreal anguloLanzamiento;
     qreal rapidezLanzamiento;
 
+    bool partidaFinalizada;
+
+    void comprobarFinPartida();
+    void finalizarPartida();
     void inicializarEscenario();
     void crearParticula();
     void dispararParticula();
@@ -58,9 +65,17 @@ private:
     void comprobarColisionesParedes();
     void fusionarParticulas(int indice1, int indice2);
     void registrarPosiciones();
+    void cambiarTurno();
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;
+
+    Jugador* jugador1;
+    Jugador* jugador2;
+    Jugador* jugadorActual;
+
+    void crearJugadores();
+    void comprobarColisionesJugadores();
 };
 
 #endif // JUEGO_H

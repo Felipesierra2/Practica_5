@@ -4,6 +4,8 @@
 #include <QtMath>
 #include <QPen>
 #include <QDir>
+#include <QFont>
+#include <QBrush>
 
 Juego::Juego(QWidget* parent)
     : QGraphicsView(parent),
@@ -13,12 +15,13 @@ Juego::Juego(QWidget* parent)
     posicionLanzamiento(50, 550),
     anguloLanzamiento(45.0),
     rapidezLanzamiento(20.0),
-    tiempoSimulacion(0.0)
+    tiempoSimulacion(0.0),
+    partidaFinalizada(false)
 {
     inicializarEscenario();
+    crearJugadores();
     crearParedes();
     crearObstaculos();
-    crearParticula();
     crearIndicadores();
 
     connect(temporizador, &QTimer::timeout,
@@ -54,10 +57,16 @@ void Juego::inicializarEscenario()
 
 void Juego::crearParticula()
 {
+    if (!jugadorActual)
+        return;
+
+    QPointF posicionInicial =
+        jugadorActual->obtenerPosicionLanzamiento();
+
     particulaActual = new Particula(
         1.0,
         10.0,
-        posicionLanzamiento
+        posicionInicial
         );
 
     escena->addItem(particulaActual);
@@ -67,22 +76,25 @@ void Juego::crearParticula()
 
 void Juego::keyPressEvent(QKeyEvent* evento)
 {
+    if (partidaFinalizada || !jugadorActual)
+        return;
+
     switch (evento->key())
     {
     case Qt::Key_Up:
-        anguloLanzamiento += 5.0;
+        jugadorActual->modificarAngulo(5.0);
         break;
 
     case Qt::Key_Down:
-        anguloLanzamiento -= 5.0;
+        jugadorActual->modificarAngulo(-5.0);
         break;
 
     case Qt::Key_Right:
-        rapidezLanzamiento += 1.0;
+        jugadorActual->modificarRapidez(1.0);
         break;
 
     case Qt::Key_Left:
-        rapidezLanzamiento -= 1.0;
+        jugadorActual->modificarRapidez(-1.0);
         break;
 
     case Qt::Key_Space:
@@ -95,10 +107,6 @@ void Juego::keyPressEvent(QKeyEvent* evento)
         QGraphicsView::keyPressEvent(evento);
         return;
     }
-
-    anguloLanzamiento = qBound(0.0, anguloLanzamiento, 90.0);
-
-    rapidezLanzamiento = qBound(1.0, rapidezLanzamiento, 40.0);
 
     actualizarIndicadores();
 }
@@ -122,17 +130,25 @@ void Juego::actualizarJuego()
 
     comprobarColisionesParticulas();
 
+    comprobarColisionesJugadores();
+
     registrarPosiciones();
+
+    comprobarFinPartida();
 }
 
 void Juego::dispararParticula()
 {
+    if (!jugadorActual)
+        return;
+
+    crearParticula();
+
     if (!particulaActual)
         return;
 
     particulaActual->lanzar(
-        rapidezLanzamiento,
-        anguloLanzamiento
+        jugadorActual->obtenerVelocidadLanzamiento()
         );
 
     registro.registrarPosicion(
@@ -141,7 +157,9 @@ void Juego::dispararParticula()
         particulaActual->scenePos()
         );
 
-    crearParticula();
+    particulaActual = nullptr;
+
+    cambiarTurno();
 }
 
 void Juego::crearIndicadores()
@@ -161,28 +179,77 @@ void Juego::crearIndicadores()
 
 void Juego::actualizarIndicadores()
 {
-    qreal anguloRadianes =
-        qDegreesToRadians(anguloLanzamiento);
+    if (!jugadorActual)
+        return;
 
-    qreal longitud = rapidezLanzamiento * 4.0;
+    QPointF origen =
+        jugadorActual->obtenerPosicionLanzamiento();
 
-    QPointF extremo(
-        posicionLanzamiento.x() +
-            longitud * qCos(anguloRadianes),
+    QVector2D velocidad =
+        jugadorActual->obtenerVelocidadLanzamiento();
 
-        posicionLanzamiento.y() -
-            longitud * qSin(anguloRadianes)
-        );
+    QPointF extremo =
+        origen + (velocidad * 4.0f).toPointF();
 
     indicadorLanzamiento->setLine(
-        QLineF(posicionLanzamiento, extremo)
+        QLineF(origen, extremo)
         );
 
     informacionLanzamiento->setPlainText(
-        QString("Angulo: %1 grados\nRapidez: %2 m/s")
-            .arg(anguloLanzamiento)
-            .arg(rapidezLanzamiento)
+        QString("Turno: Jugador %1\n"
+                "Angulo: %2 grados\n"
+                "Rapidez: %3 m/s")
+            .arg(jugadorActual == jugador1 ? 1 : 2)
+            .arg(jugadorActual->obtenerAngulo())
+            .arg(jugadorActual->obtenerRapidez())
         );
+}
+
+void Jugador::crearBarraVida()
+{
+    fondoVida = new QGraphicsRectItem(
+        -ANCHO_BARRA_VIDA / 2.0,
+        -50.0,
+        ANCHO_BARRA_VIDA,
+        ALTO_BARRA_VIDA
+        );
+
+    fondoVida->setBrush(Qt::darkGray);
+    fondoVida->setPen(Qt::NoPen);
+
+    barraVida = new QGraphicsRectItem(
+        fondoVida->rect()
+        );
+
+    barraVida->setBrush(Qt::green);
+    barraVida->setPen(Qt::NoPen);
+
+    addToGroup(fondoVida);
+    addToGroup(barraVida);
+
+    fondoVida->setZValue(1);
+    barraVida->setZValue(2);
+}
+
+void Jugador::actualizarBarraVida()
+{
+    qreal proporcion = vida / VIDA_MAXIMA;
+
+    barraVida->setRect(
+        -ANCHO_BARRA_VIDA / 2.0,
+        -50.0,
+        ANCHO_BARRA_VIDA * proporcion,
+        ALTO_BARRA_VIDA
+        );
+
+    if (proporcion > 0.6)
+        barraVida->setBrush(Qt::green);
+
+    else if (proporcion > 0.3)
+        barraVida->setBrush(Qt::yellow);
+
+    else
+        barraVida->setBrush(Qt::red);
 }
 
 void Juego::crearParedes()
@@ -521,4 +588,162 @@ void Juego::registrarPosiciones()
             particula->scenePos()
             );
     }
+}
+
+void Juego::cambiarTurno()
+{
+    if (jugadorActual == jugador1)
+        jugadorActual = jugador2;
+    else
+        jugadorActual = jugador1;
+
+    actualizarIndicadores();
+}
+
+void Juego::crearJugadores()
+{
+    jugador1 = new Jugador(true);
+    jugador2 = new Jugador(false);
+
+    QRectF limites = escena->sceneRect();
+
+    jugador1->setPos(
+        limites.left() + 60,
+        limites.bottom() - 60
+        );
+
+    jugador2->setPos(
+        limites.right() - 60,
+        limites.bottom() - 60
+        );
+
+    escena->addItem(jugador1);
+    escena->addItem(jugador2);
+
+    jugadorActual = jugador1;
+
+    jugador1->recibirDano(25.0);
+    jugador2->recibirDano(80.0);
+}
+
+void Juego::comprobarColisionesJugadores()
+{
+    for (int i = particulas.size() - 1; i >= 0; i--)
+    {
+        Particula* particula = particulas.at(i);
+
+        if (!particula->estaLanzada())
+            continue;
+
+        Jugador* jugadorImpactado = nullptr;
+
+        if (jugador1->detectarImpacto(particula))
+            jugadorImpactado = jugador1;
+
+        else if (jugador2->detectarImpacto(particula))
+            jugadorImpactado = jugador2;
+
+        if (!jugadorImpactado)
+            continue;
+
+        const qreal energia =
+            particula->calcularEnergiaCinetica();
+
+        const qreal dano = energia * FACTOR_DANO;
+
+        jugadorImpactado->recibirDano(dano);
+
+        registro.registrarPosicion(
+            tiempoSimulacion,
+            particula->obtenerIdentificador(),
+            particula->scenePos()
+            );
+
+        qDebug() << "========== IMPACTO ==========";
+
+        qDebug() << "Jugador impactado:"
+                 << (jugadorImpactado == jugador1 ? 1 : 2);
+
+        qDebug() << "Masa:"
+                 << particula->obtenerMasa() << "kg";
+
+        qDebug() << "Energia cinetica:"
+                 << energia << "J";
+
+        qDebug() << "Dano generado:" << dano;
+
+        qDebug() << "Vida restante:"
+                 << jugadorImpactado->obtenerVida();
+
+        qDebug() << "=============================";
+
+        particulas.removeAt(i);
+
+        escena->removeItem(particula);
+
+        delete particula;
+    }
+}
+
+void Juego::comprobarFinPartida()
+{
+    if (partidaFinalizada)
+        return;
+
+    if (jugador1->estaDerrotado() ||
+        jugador2->estaDerrotado())
+    {
+        finalizarPartida();
+    }
+}
+
+void Juego::finalizarPartida()
+{
+    if (partidaFinalizada)
+        return;
+
+    partidaFinalizada = true;
+
+    temporizador->stop();
+
+    indicadorLanzamiento->setVisible(false);
+
+    QString mensaje;
+
+    if (jugador1->estaDerrotado() &&
+        jugador2->estaDerrotado())
+    {
+        mensaje = "EMPATE";
+    }
+    else if (jugador1->estaDerrotado())
+    {
+        mensaje = "JUGADOR 2 GANA";
+    }
+    else
+    {
+        mensaje = "JUGADOR 1 GANA";
+    }
+
+    QGraphicsTextItem* resultado =
+        escena->addText(mensaje);
+
+    resultado->setFont(
+        QFont("Arial", 28, QFont::Bold)
+        );
+
+    resultado->setDefaultTextColor(Qt::yellow);
+
+    QRectF limites = resultado->boundingRect();
+
+    resultado->setPos(
+        escena->sceneRect().center().x()
+            - limites.width() / 2.0,
+
+        escena->sceneRect().center().y()
+            - limites.height() / 2.0
+        );
+
+    resultado->setZValue(100);
+
+    qDebug() << mensaje;
 }

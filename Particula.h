@@ -16,6 +16,7 @@ public:
               const QPointF& velocidadInicial);
 
     void lanzar(qreal rapidezInicial, qreal angulo);
+    void lanzar(const QVector2D& velocidadInicial);
     void actualizarMovimiento(qreal deltaTiempo);
     void establecerVelocidad(const QPointF& nuevaVelocidad);
 
