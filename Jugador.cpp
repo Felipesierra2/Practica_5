@@ -2,8 +2,9 @@
 #include <QPen>
 #include <QBrush>
 #include <QtMath>
+#include <qfont.h>
 
-Jugador::Jugador(bool mirandoDerecha, QGraphicsItem* parent)
+Jugador::Jugador(bool mirandoDerecha, const QColor &color, QGraphicsItem* parent)
     : QGraphicsItemGroup(parent),
     anguloLanzamiento(45.0),
     rapidezLanzamiento(20.0),
@@ -12,18 +13,29 @@ Jugador::Jugador(bool mirandoDerecha, QGraphicsItem* parent)
 {
     base = new QGraphicsEllipseItem(-20, -20, 40, 40);
 
-    base->setBrush(Qt::darkGray);
-    base->setPen(QPen(Qt::black, 2));
+    base->setBrush(color);
+    base->setPen(QPen(color.lighter(150), 2));
 
     canon = new QGraphicsLineItem(0, 0, 35, 0);
 
-    canon->setPen(QPen(Qt::black, 8));
+    canon->setPen(QPen(color.darker(150), 8));
 
     addToGroup(base);
     addToGroup(canon);
 
     actualizarCanon();
     crearBarraVida();
+
+    etiquetaNombre = new QGraphicsSimpleTextItem();
+
+    etiquetaNombre->setBrush(color.lighter(160));
+    etiquetaNombre->setFont(QFont("Arial", 10, QFont::Bold));
+
+    addToGroup(etiquetaNombre);
+
+    etiquetaNombre->setZValue(3);
+
+    crearIndicadorTurno();
 }
 
 void Jugador::actualizarCanon()
@@ -133,3 +145,35 @@ QVector2D Jugador::obtenerVelocidadLanzamiento() const
     return QVector2D(velocidadX, velocidadY);
 }
 
+void Jugador::establecerNombre(const QString& nombre)
+{
+    etiquetaNombre->setText(nombre);
+
+    qreal anchoTexto = etiquetaNombre->boundingRect().width();
+
+    etiquetaNombre->setPos(-anchoTexto / 2.0, -70);
+}
+
+void Jugador::crearIndicadorTurno()
+{
+    QPolygonF triangulo;
+
+    triangulo << QPointF(-8, -90)
+              << QPointF(8, -90)
+              << QPointF(0, -79);
+
+    indicadorTurno = new QGraphicsPolygonItem(triangulo);
+
+    indicadorTurno->setBrush(QColor(250, 204, 21));
+    indicadorTurno->setPen(Qt::NoPen);
+
+    addToGroup(indicadorTurno);
+
+    indicadorTurno->setZValue(4);
+    indicadorTurno->setVisible(false);
+}
+
+void Jugador::establecerTurnoActivo(bool activo)
+{
+    indicadorTurno->setVisible(activo);
+}

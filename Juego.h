@@ -61,6 +61,7 @@ private:
     void comprobarColisionesObstaculos();
     void comprobarColisionesParticulas();
     void reiniciarPartida();
+    void actualizarIndicadorTurno();
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;

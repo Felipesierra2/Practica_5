@@ -538,12 +538,16 @@ void Juego::cambiarTurno()
         jugadorActual = jugador1;
 
     actualizarIndicadores();
+    actualizarIndicadorTurno();
 }
 
 void Juego::crearJugadores()
 {
-    jugador1 = new Jugador(true);
-    jugador2 = new Jugador(false);
+    jugador1 = new Jugador(true, QColor(37, 99, 235));
+    jugador2 = new Jugador(false, QColor(220, 38, 38));
+
+    jugador1->establecerNombre("MR.OCTOBER");
+    jugador2->establecerNombre("Jugador 2");
 
     QRectF limites = escena->sceneRect();
 
@@ -561,9 +565,10 @@ void Juego::crearJugadores()
     escena->addItem(jugador2);
 
     jugadorActual = jugador1;
+    actualizarIndicadorTurno();
 
-    jugador1->recibirDano(25.0);
-    jugador2->recibirDano(80.0);
+    jugador1->recibirDano(50.0);
+    jugador2->recibirDano(50.0);
 }
 
 void Juego::comprobarColisionesJugadores()
@@ -637,6 +642,7 @@ void Juego::finalizarPartida()
         return;
 
     partidaFinalizada = true;
+    actualizarIndicadorTurno();
 
     temporizador->stop();
 
@@ -718,6 +724,8 @@ void Juego::reiniciarPartida()
 
     partidaFinalizada = false;
 
+    actualizarIndicadorTurno();
+
     // Restablecer los indicadores
     indicadorLanzamiento->setVisible(true);
 
@@ -729,4 +737,18 @@ void Juego::reiniciarPartida()
     temporizador->start(16);
 
     qDebug() << "Nueva partida iniciada.";
+}
+
+void Juego::actualizarIndicadorTurno()
+{
+    if (!jugador1 || !jugador2)
+        return;
+
+    jugador1->establecerTurnoActivo(
+        !partidaFinalizada && jugadorActual == jugador1
+        );
+
+    jugador2->establecerTurnoActivo(
+        !partidaFinalizada && jugadorActual == jugador2
+        );
 }

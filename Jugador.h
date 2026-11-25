@@ -5,7 +5,10 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsEllipseItem>
 #include <QGraphicsRectItem>
+#include <QGraphicsSimpleTextItem>
 #include <QVector2D>
+#include <QColor>
+#include <QGraphicsPolygonItem>
 
 #include "Particula.h"
 
@@ -18,6 +21,7 @@ private:
 
     QGraphicsRectItem* fondoVida;
     QGraphicsRectItem* barraVida;
+    QGraphicsSimpleTextItem* etiquetaNombre;
 
     static constexpr qreal ANCHO_BARRA_VIDA = 50.0;
     static constexpr qreal ALTO_BARRA_VIDA = 6.0;
@@ -40,14 +44,21 @@ private:
     QGraphicsEllipseItem* base;
 
     void actualizarCanon();
+
+    QGraphicsPolygonItem* indicadorTurno;
+
+    void crearIndicadorTurno();
 public:
     explicit Jugador(bool mirandoDerecha,
+                     const QColor& color,
                      QGraphicsItem* parent = nullptr);
 
     void modificarAngulo(qreal incremento);
     void modificarRapidez(qreal incremento);
     void recibirDano(qreal cantidad);
     void reiniciar();
+    void establecerNombre(const QString& nombre);
+    void establecerTurnoActivo(bool activo);
 
 
     qreal obtenerVida() const;
