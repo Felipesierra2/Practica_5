@@ -3,17 +3,24 @@
 #include <QPen>
 #include <QtMath>
 #include <QDebug>
+#include <QFont>
 
 Obstaculo::Obstaculo(const QRectF& dimensiones,
-                     qreal coeficienteRestitucion)
+                     qreal coeficienteRestitucion,
+                     qreal resistenciaInicial,
+                     int propietario)
     : QGraphicsRectItem(dimensiones),
     coeficienteRestitucion(
-        qBound(0.0, coeficienteRestitucion, 1.0))
+        qBound(0.0, coeficienteRestitucion, 1.0)),
+    resistenciaMaxima(qMax(1.0, resistenciaInicial)),
+    resistencia(resistenciaMaxima),
+    propietario(propietario)
 {
     setBrush(QColor(162, 120, 76));
     setPen(Qt::NoPen);
-}
 
+    crearTextoResistencia();
+}
 qreal Obstaculo::obtenerCoeficienteRestitucion() const
 {
     return coeficienteRestitucion;
@@ -39,10 +46,9 @@ QPointF Obstaculo::calcularPuntoMasCercano(
     return QPointF(x, y);
 }
 
-bool Obstaculo::detectarColision(
-    const Particula* particula) const
+bool Obstaculo::detectarColision(const Particula* particula) const
 {
-    if (!particula || !particula->estaLanzada())
+    if (!particula || !particula->estaLanzada() || estaDestruido())
         return false;
 
     const QPointF centro = particula->scenePos();
@@ -182,4 +188,98 @@ void Obstaculo::resolverColision(Particula* particula) const
                   velocidadNormal);
 
     particula->establecerVelocidad(nuevaVelocidad);
+}
+
+
+qreal Obstaculo::obtenerResistencia() const
+{
+    return resistencia;
+}
+
+qreal Obstaculo::obtenerResistenciaMaxima() const
+{
+    return resistenciaMaxima;
+}
+
+int Obstaculo::obtenerPropietario() const
+{
+    return propietario;
+}
+
+bool Obstaculo::estaDestruido() const
+{
+    return resistencia <= 0.0;
+}
+
+void Obstaculo::recibirDano(qreal cantidad)
+{
+    if (cantidad <= 0.0 || estaDestruido())
+        return;
+
+    resistencia = qMax(0.0, resistencia - cantidad);
+
+    actualizarTextoResistencia();
+
+    qDebug() << "Infraestructura del jugador:"
+             << propietario
+             << "| Dano recibido:" << cantidad
+             << "| Resistencia restante:" << resistencia;
+
+    if (estaDestruido())
+    {
+        setVisible(false);
+
+        qDebug() << "Infraestructura destruida.";
+    }
+}
+
+void Obstaculo::reiniciar()
+{
+    resistencia = resistenciaMaxima;
+
+    actualizarTextoResistencia();
+
+    setVisible(true);
+}
+
+void Obstaculo::crearTextoResistencia()
+{
+    textoResistencia = new QGraphicsSimpleTextItem(this);
+
+    textoResistencia->setFont(
+        QFont("Arial", 14, QFont::Bold)
+        );
+
+    textoResistencia->setZValue(1);
+
+    actualizarTextoResistencia();
+}
+
+void Obstaculo::actualizarTextoResistencia()
+{
+    textoResistencia->setText(
+        QString::number(qCeil(resistencia))
+        );
+
+    const QRectF limitesTexto =
+        textoResistencia->boundingRect();
+
+    const QPointF centro = rect().center();
+
+    textoResistencia->setPos(
+        centro.x() - limitesTexto.center().x(),
+        centro.y() - limitesTexto.center().y()
+        );
+
+    const qreal proporcion =
+        resistencia / resistenciaMaxima;
+
+    if (proporcion > 0.6)
+        textoResistencia->setBrush(Qt::white);
+
+    else if (proporcion > 0.3)
+        textoResistencia->setBrush(Qt::yellow);
+
+    else
+        textoResistencia->setBrush(QColor(255, 100, 100));
 }

@@ -14,6 +14,7 @@
 #include "pared.h"
 #include "obstaculo.h"
 #include "Jugador.h"
+#include "HUD.h"
 
 class Juego : public QGraphicsView
 {
@@ -27,6 +28,7 @@ protected:
 
 private:
     static constexpr qreal FACTOR_DANO = 0.05;
+    static constexpr qreal FACTOR_DANO_ESTRUCTURAL = 1.0;
 
     QGraphicsTextItem* mensajeResultado = nullptr;
     QGraphicsScene* escena;
@@ -45,6 +47,9 @@ private:
 
     bool partidaFinalizada;
 
+    HUD* hud = nullptr;
+
+    void crearHUD();
     void comprobarFinPartida();
     void finalizarPartida();
     void inicializarEscenario();
@@ -64,7 +69,6 @@ private:
     void actualizarIndicadorTurno();
 
     QGraphicsLineItem* indicadorLanzamiento;
-    QGraphicsTextItem* informacionLanzamiento;
 
     Jugador* jugador1;
     Jugador* jugador2;

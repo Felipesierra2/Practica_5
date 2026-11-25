@@ -18,6 +18,7 @@ Juego::Juego(QWidget* parent)
     crearParedes();
     crearObstaculos();
     crearIndicadores();
+    crearHUD();
 
     connect(temporizador, &QTimer::timeout,
             this, &Juego::actualizarJuego);
@@ -159,11 +160,6 @@ void Juego::crearIndicadores()
         QPen(Qt::green, 2)
         );
 
-    informacionLanzamiento = escena->addText("");
-
-    informacionLanzamiento->setDefaultTextColor(Qt::white);
-    informacionLanzamiento->setPos(10, 10);
-
     actualizarIndicadores();
 }
 
@@ -172,27 +168,22 @@ void Juego::actualizarIndicadores()
     if (!jugadorActual)
         return;
 
-    QPointF origen =
-        jugadorActual->obtenerPosicionLanzamiento();
+    QPointF origen = jugadorActual->obtenerPosicionLanzamiento();
 
-    QVector2D velocidad =
-        jugadorActual->obtenerVelocidadLanzamiento();
+    QVector2D velocidad = jugadorActual->obtenerVelocidadLanzamiento();
 
-    QPointF extremo =
-        origen + (velocidad * 4.0f).toPointF();
+    QPointF extremo = origen + (velocidad * 4.0f).toPointF();
 
-    indicadorLanzamiento->setLine(
-        QLineF(origen, extremo)
-        );
+    indicadorLanzamiento->setLine(QLineF(origen, extremo));
 
-    informacionLanzamiento->setPlainText(
-        QString("Turno: Jugador %1\n"
-                "Angulo: %2 grados\n"
-                "Rapidez: %3 m/s")
-            .arg(jugadorActual == jugador1 ? 1 : 2)
-            .arg(jugadorActual->obtenerAngulo())
-            .arg(jugadorActual->obtenerRapidez())
-        );
+    if (hud)
+    {
+        hud->actualizarTurno(jugadorActual == jugador1 ? 1 : 2);
+
+        hud->actualizarAngulo(jugadorActual->obtenerAngulo());
+
+        hud->actualizarRapidez(jugadorActual->obtenerRapidez());
+    }
 }
 
 void Jugador::crearBarraVida()
@@ -279,20 +270,32 @@ void Juego::crearParedes()
 
 void Juego::crearObstaculos()
 {
+    // Fortaleza del jugador 1
+
     obstaculos.append(new Obstaculo(
-        QRectF(250, 400, 80, 80), 0.8
+        QRectF(100, 465, 30, 120), 0.6, 200.0, 1
         ));
 
     obstaculos.append(new Obstaculo(
-        QRectF(450, 250, 80, 80), 0.6
+        QRectF(230, 465, 30, 120), 0.6, 200.0, 1
         ));
 
     obstaculos.append(new Obstaculo(
-        QRectF(600, 450, 80, 80), 0.4
+        QRectF(100, 435, 160, 30), 0.4, 100.0, 1
+        ));
+
+    // Fortaleza del jugador 2
+
+    obstaculos.append(new Obstaculo(
+        QRectF(540, 465, 30, 120), 0.6, 200.0, 2
         ));
 
     obstaculos.append(new Obstaculo(
-        QRectF(150, 150, 80, 80), 0.2
+        QRectF(670, 465, 30, 120), 0.6, 200.0, 2
+        ));
+
+    obstaculos.append(new Obstaculo(
+        QRectF(540, 435, 160, 30), 0.4, 100.0, 2
         ));
 
     for (Obstaculo* obstaculo : obstaculos)
@@ -325,6 +328,24 @@ void Juego::comprobarColisionesObstaculos()
 
                 if (velocidadInicial == velocidadFinal)
                     continue;
+
+                const qreal rapidezImpacto = qSqrt(
+                    velocidadInicial.x() * velocidadInicial.x() +
+                    velocidadInicial.y() * velocidadInicial.y()
+                    );
+
+                const qreal momentoImpacto =
+                    particula->obtenerMasa() * rapidezImpacto;
+
+                const qreal dano =
+                    FACTOR_DANO_ESTRUCTURAL * momentoImpacto;
+
+                obstaculo->recibirDano(dano);
+
+                qDebug() << "Momento lineal de impacto:"
+                         << momentoImpacto << "kg*m/s";
+
+                qDebug() << "Dano estructural:" << dano;
 
                 qDebug() << "Colision con obstaculo."
                          << "Coeficiente:"
@@ -553,22 +574,19 @@ void Juego::crearJugadores()
 
     jugador1->setPos(
         limites.left() + 60,
-        limites.bottom() - 60
-        );
+        limites.top() + 300
+    );
 
     jugador2->setPos(
         limites.right() - 60,
-        limites.bottom() - 60
-        );
+        limites.top() + 300
+    );
 
     escena->addItem(jugador1);
     escena->addItem(jugador2);
 
     jugadorActual = jugador1;
     actualizarIndicadorTurno();
-
-    jugador1->recibirDano(50.0);
-    jugador2->recibirDano(50.0);
 }
 
 void Juego::comprobarColisionesJugadores()
@@ -719,6 +737,11 @@ void Juego::reiniciarPartida()
     jugador1->reiniciar();
     jugador2->reiniciar();
 
+    for (Obstaculo* obstaculo : obstaculos)
+    {
+        obstaculo->reiniciar();
+    }
+
     // Restablecer el estado de la partida
     jugadorActual = jugador1;
 
@@ -751,4 +774,22 @@ void Juego::actualizarIndicadorTurno()
     jugador2->establecerTurnoActivo(
         !partidaFinalizada && jugadorActual == jugador2
         );
+}
+
+void Juego::crearHUD()
+{
+    hud = new HUD();
+
+    escena->addItem(hud);
+
+    const QRectF limites = escena->sceneRect();
+
+    qreal x = limites.center().x()
+              - hud->boundingRect().center().x();
+
+    qreal y = limites.top() + 20;
+
+    hud->setPos(x, y);
+
+    actualizarIndicadores();
 }
