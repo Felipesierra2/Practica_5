@@ -29,6 +29,8 @@ public:
     QPointF obtenerVelocidad() const;
     QPointF calcularMomentoLineal() const;
 
+    int obtenerIdentificador() const;
+
 private:
     qreal masa;
     qreal radio;
@@ -40,6 +42,9 @@ private:
 
     static constexpr qreal GRAVEDAD = 9.81;
     static constexpr qreal PIXELES_POR_METRO = 20.0;
+
+    const int identificador;
+    static int siguienteIdentificador;
 };
 
 #endif // PARTICULA_H

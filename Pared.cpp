@@ -102,3 +102,23 @@ void Pared::resolverColision(Particula* particula) const
     particula->setPos(posicion);
     particula->establecerVelocidad(velocidad);
 }
+
+QString Pared::obtenerNombre() const
+{
+    switch (tipo)
+    {
+    case TipoPared::IZQUIERDA:
+        return "IZQUIERDA";
+
+    case TipoPared::DERECHA:
+        return "DERECHA";
+
+    case TipoPared::SUPERIOR:
+        return "SUPERIOR";
+
+    case TipoPared::INFERIOR:
+        return "INFERIOR";
+    }
+
+    return "DESCONOCIDA";
+}

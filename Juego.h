@@ -13,6 +13,7 @@
 #include "particula.h"
 #include "pared.h"
 #include "obstaculo.h"
+#include "registrosimulacion.h"
 
 class Juego : public QGraphicsView
 {
@@ -44,6 +45,8 @@ private:
 
     QPointF posicionLanzamiento;
 
+    RegistroSimulacion registro;
+    qreal tiempoSimulacion;
     qreal anguloLanzamiento;
     qreal rapidezLanzamiento;
 
@@ -54,6 +57,7 @@ private:
     void eliminarParticulasFueraEscenario();
     void comprobarColisionesParedes();
     void fusionarParticulas(int indice1, int indice2);
+    void registrarPosiciones();
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;

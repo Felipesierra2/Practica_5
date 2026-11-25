@@ -2,20 +2,28 @@
 #include <QBrush>
 #include <QPen>
 #include <QtMath>
+#include <QDebug>
 
-Particula::Particula(qreal masa, qreal radio,
-                     const QPointF& posicionInicial)
+int Particula::siguienteIdentificador = 1;
+
+Particula::Particula(
+    qreal masa,
+    qreal radio,
+    const QPointF& posicionInicial)
     : QGraphicsEllipseItem(-radio, -radio,
                            2 * radio, 2 * radio),
     masa(masa),
     radio(radio),
     velocidad(0, 0),
     aceleracion(0, GRAVEDAD),
-    lanzada(false)
+    lanzada(false),
+    identificador(siguienteIdentificador++)
 {
     setPos(posicionInicial);
     setBrush(Qt::blue);
     setPen(Qt::NoPen);
+
+    qDebug() << "Particula creada. ID:" << identificador;
 }
 
 Particula::Particula(qreal masa,
@@ -118,4 +126,9 @@ void Particula::establecerVelocidad(
     const QPointF& nuevaVelocidad)
 {
     velocidad = nuevaVelocidad;
+}
+
+int Particula::obtenerIdentificador() const
+{
+    return identificador;
 }

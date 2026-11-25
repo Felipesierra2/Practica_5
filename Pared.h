@@ -2,6 +2,8 @@
 #define PARED_H
 
 #include <QGraphicsRectItem>
+#include <QString>
+
 #include "particula.h"
 
 enum class TipoPared
@@ -22,6 +24,8 @@ public:
     void resolverColision(Particula* particula) const;
 
     TipoPared obtenerTipo() const;
+
+    QString obtenerNombre() const;
 
 private:
     TipoPared tipo;

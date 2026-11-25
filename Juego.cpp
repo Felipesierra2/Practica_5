@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QtMath>
 #include <QPen>
+#include <QDir>
 
 Juego::Juego(QWidget* parent)
     : QGraphicsView(parent),
@@ -11,7 +12,8 @@ Juego::Juego(QWidget* parent)
     particulaActual(nullptr),
     posicionLanzamiento(50, 550),
     anguloLanzamiento(45.0),
-    rapidezLanzamiento(20.0)
+    rapidezLanzamiento(20.0),
+    tiempoSimulacion(0.0)
 {
     inicializarEscenario();
     crearParedes();
@@ -21,6 +23,14 @@ Juego::Juego(QWidget* parent)
 
     connect(temporizador, &QTimer::timeout,
             this, &Juego::actualizarJuego);
+
+    if (!registro.abrirArchivo("simulacion.txt"))
+    {
+        qDebug() << "No se pudo iniciar el registro.";
+    }
+
+    qDebug() << "Ruta del archivo:"
+             << QDir::current().absoluteFilePath("simulacion.txt");
 
     reloj.start();
     temporizador->start(16);
@@ -99,14 +109,20 @@ void Juego::actualizarJuego()
 
     deltaTiempo = qMin(deltaTiempo, 0.05);
 
+    tiempoSimulacion += deltaTiempo;
+
     for (Particula* particula : particulas)
     {
         particula->actualizarMovimiento(deltaTiempo);
     }
 
     comprobarColisionesParedes();
+
     comprobarColisionesObstaculos();
+
     comprobarColisionesParticulas();
+
+    registrarPosiciones();
 }
 
 void Juego::dispararParticula()
@@ -114,8 +130,16 @@ void Juego::dispararParticula()
     if (!particulaActual)
         return;
 
-    particulaActual->lanzar(rapidezLanzamiento,
-                            anguloLanzamiento);
+    particulaActual->lanzar(
+        rapidezLanzamiento,
+        anguloLanzamiento
+        );
+
+    registro.registrarPosicion(
+        tiempoSimulacion,
+        particulaActual->obtenerIdentificador(),
+        particulaActual->scenePos()
+        );
 
     crearParticula();
 }
@@ -210,6 +234,10 @@ void Juego::crearObstaculos()
         QRectF(600, 450, 80, 80), 0.4
         ));
 
+    obstaculos.append(new Obstaculo(
+        QRectF(150, 150, 80, 80), 0.2
+        ));
+
     for (Obstaculo* obstaculo : obstaculos)
     {
         escena->addItem(obstaculo);
@@ -224,29 +252,44 @@ void Juego::comprobarColisionesObstaculos()
         {
             if (obstaculo->detectarColision(particula))
             {
+                const QPointF velocidadInicial =
+                    particula->obtenerVelocidad();
+
                 qreal energiaInicial =
                     particula->calcularEnergiaCinetica();
 
                 obstaculo->resolverColision(particula);
 
+                const QPointF velocidadFinal =
+                    particula->obtenerVelocidad();
+
                 qreal energiaFinal =
                     particula->calcularEnergiaCinetica();
 
-                if (energiaInicial - energiaFinal > 0.000001)
-                {
-                    qDebug() << "Colision con obstaculo."
-                             << "Coeficiente:"
-                             << obstaculo->obtenerCoeficienteRestitucion();
+                if (velocidadInicial == velocidadFinal)
+                    continue;
 
-                    qDebug() << "Energia inicial:"
-                             << energiaInicial << "J";
+                registro.registrarColision(
+                    tiempoSimulacion,
+                    particula->obtenerIdentificador(),
+                    "OBSTACULO",
+                    QString::number(
+                        obstaculo->obtenerCoeficienteRestitucion()
+                        )
+                    );
 
-                    qDebug() << "Energia final:"
-                             << energiaFinal << "J";
+                qDebug() << "Colision con obstaculo."
+                         << "Coeficiente:"
+                         << obstaculo->obtenerCoeficienteRestitucion();
 
-                    qDebug() << "Energia perdida:"
-                             << energiaInicial - energiaFinal << "J";
-                }
+                qDebug() << "Energia inicial:"
+                         << energiaInicial << "J";
+
+                qDebug() << "Energia final:"
+                         << energiaFinal << "J";
+
+                qDebug() << "Energia perdida:"
+                         << energiaInicial - energiaFinal << "J";
             }
         }
     }
@@ -303,22 +346,38 @@ void Juego::comprobarColisionesParedes()
         {
             if (pared->detectarColision(particula))
             {
+                const QPointF velocidadInicial =
+                    particula->obtenerVelocidad();
+
                 qreal energiaInicial =
                     particula->calcularEnergiaCinetica();
 
                 pared->resolverColision(particula);
 
+                const QPointF velocidadFinal =
+                    particula->obtenerVelocidad();
+
                 qreal energiaFinal =
                     particula->calcularEnergiaCinetica();
 
+                if (velocidadInicial == velocidadFinal)
+                    continue;
+
+                registro.registrarColision(
+                    tiempoSimulacion,
+                    particula->obtenerIdentificador(),
+                    "PARED",
+                    pared->obtenerNombre()
+                    );
+
                 qDebug() << "Colision con pared:"
-                         << static_cast<int>(pared->obtenerTipo());
+                         << pared->obtenerNombre();
 
-                qDebug() << "Energia inicial:" << energiaInicial
-                         << "J";
+                qDebug() << "Energia inicial:"
+                         << energiaInicial << "J";
 
-                qDebug() << "Energia final:" << energiaFinal
-                         << "J";
+                qDebug() << "Energia final:"
+                         << energiaFinal << "J";
 
                 qDebug() << "Diferencia:"
                          << energiaFinal - energiaInicial
@@ -332,6 +391,18 @@ void Juego::fusionarParticulas(int indice1, int indice2)
 {
     Particula* primera = particulas.at(indice1);
     Particula* segunda = particulas.at(indice2);
+
+    registro.registrarPosicion(
+        tiempoSimulacion,
+        primera->obtenerIdentificador(),
+        primera->scenePos()
+        );
+
+    registro.registrarPosicion(
+        tiempoSimulacion,
+        segunda->obtenerIdentificador(),
+        segunda->scenePos()
+        );
 
     const qreal energiaInicial =
         primera->calcularEnergiaCinetica() +
@@ -364,6 +435,13 @@ void Juego::fusionarParticulas(int indice1, int indice2)
         radioFinal,
         posicionFinal,
         velocidadFinal
+        );
+
+    registro.registrarFusion(
+        tiempoSimulacion,
+        primera->obtenerIdentificador(),
+        segunda->obtenerIdentificador(),
+        fusionada->obtenerIdentificador()
         );
 
     const QPointF momentoFinal =
@@ -428,4 +506,19 @@ void Juego::fusionarParticulas(int indice1, int indice2)
              << particulas.size();
 
     qDebug() << "=========================================";
+}
+
+void Juego::registrarPosiciones()
+{
+    for (Particula* particula : particulas)
+    {
+        if (!particula->estaLanzada())
+            continue;
+
+        registro.registrarPosicion(
+            tiempoSimulacion,
+            particula->obtenerIdentificador(),
+            particula->scenePos()
+            );
+    }
 }
