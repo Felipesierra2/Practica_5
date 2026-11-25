@@ -12,6 +12,7 @@
 
 #include "particula.h"
 #include "pared.h"
+#include "obstaculo.h"
 
 class Juego : public QGraphicsView
 {
@@ -23,6 +24,8 @@ public:
     void crearIndicadores();
     void actualizarIndicadores();
     void crearParedes();
+    void crearObstaculos();
+    void comprobarColisionesObstaculos();
 
 protected:
     void keyPressEvent(QKeyEvent* evento) override;
@@ -34,6 +37,7 @@ private:
 
     QList<Particula*> particulas;
     QList<Pared*> paredes;
+    QList<Obstaculo*> obstaculos;
 
     Particula* particulaActual;
 

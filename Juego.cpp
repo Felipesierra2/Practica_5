@@ -14,11 +14,9 @@ Juego::Juego(QWidget* parent)
     rapidezLanzamiento(20.0)
 {
     inicializarEscenario();
-
     crearParedes();
-
+    crearObstaculos();
     crearParticula();
-
     crearIndicadores();
 
     connect(temporizador, &QTimer::timeout,
@@ -107,8 +105,7 @@ void Juego::actualizarJuego()
     }
 
     comprobarColisionesParedes();
-
-    // eliminarParticulasFueraEscenario();
+    comprobarColisionesObstaculos();
 }
 
 void Juego::dispararParticula()
@@ -195,6 +192,62 @@ void Juego::crearParedes()
     for (Pared* pared : paredes)
     {
         escena->addItem(pared);
+    }
+}
+
+void Juego::crearObstaculos()
+{
+    obstaculos.append(new Obstaculo(
+        QRectF(250, 400, 80, 80), 0.8
+        ));
+
+    obstaculos.append(new Obstaculo(
+        QRectF(450, 250, 80, 80), 0.6
+        ));
+
+    obstaculos.append(new Obstaculo(
+        QRectF(600, 450, 80, 80), 0.4
+        ));
+
+    for (Obstaculo* obstaculo : obstaculos)
+    {
+        escena->addItem(obstaculo);
+    }
+}
+
+void Juego::comprobarColisionesObstaculos()
+{
+    for (Particula* particula : particulas)
+    {
+        for (Obstaculo* obstaculo : obstaculos)
+        {
+            if (obstaculo->detectarColision(particula))
+            {
+                qreal energiaInicial =
+                    particula->calcularEnergiaCinetica();
+
+                obstaculo->resolverColision(particula);
+
+                qreal energiaFinal =
+                    particula->calcularEnergiaCinetica();
+
+                if (energiaInicial - energiaFinal > 0.000001)
+                {
+                    qDebug() << "Colision con obstaculo."
+                             << "Coeficiente:"
+                             << obstaculo->obtenerCoeficienteRestitucion();
+
+                    qDebug() << "Energia inicial:"
+                             << energiaInicial << "J";
+
+                    qDebug() << "Energia final:"
+                             << energiaFinal << "J";
+
+                    qDebug() << "Energia perdida:"
+                             << energiaInicial - energiaFinal << "J";
+                }
+            }
+        }
     }
 }
 
