@@ -26,6 +26,7 @@ public:
     void crearParedes();
     void crearObstaculos();
     void comprobarColisionesObstaculos();
+    void comprobarColisionesParticulas();
 
 protected:
     void keyPressEvent(QKeyEvent* evento) override;
@@ -52,6 +53,7 @@ private:
     void actualizarJuego();
     void eliminarParticulasFueraEscenario();
     void comprobarColisionesParedes();
+    void fusionarParticulas(int indice1, int indice2);
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;

@@ -18,9 +18,46 @@ Particula::Particula(qreal masa, qreal radio,
     setPen(Qt::NoPen);
 }
 
+Particula::Particula(qreal masa,
+                     qreal radio,
+                     const QPointF& posicionInicial,
+                     const QPointF& velocidadInicial)
+    : Particula(masa, radio, posicionInicial)
+{
+    velocidad = velocidadInicial;
+    lanzada = true;
+
+    setBrush(Qt::green);
+}
+
 bool Particula::estaLanzada() const
 {
     return lanzada;
+}
+
+bool Particula::detectarColision(
+    const Particula* otra) const
+{
+    if (!otra || otra == this)
+        return false;
+
+    if (!estaLanzada() || !otra->estaLanzada())
+        return false;
+
+    const QPointF centro1 = scenePos();
+    const QPointF centro2 = otra->scenePos();
+
+    const qreal dx = centro2.x() - centro1.x();
+    const qreal dy = centro2.y() - centro1.y();
+
+    const qreal distanciaCuadrada =
+        dx * dx + dy * dy;
+
+    const qreal sumaRadios =
+        radio + otra->obtenerRadio();
+
+    return distanciaCuadrada <=
+           sumaRadios * sumaRadios;
 }
 
 qreal Particula::obtenerMasa() const
@@ -36,6 +73,11 @@ qreal Particula::obtenerRadio() const
 QPointF Particula::obtenerVelocidad() const
 {
     return velocidad;
+}
+
+QPointF Particula::calcularMomentoLineal() const
+{
+    return velocidad * masa;
 }
 
 qreal Particula::calcularEnergiaCinetica() const

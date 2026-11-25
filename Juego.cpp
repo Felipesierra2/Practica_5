@@ -106,6 +106,7 @@ void Juego::actualizarJuego()
 
     comprobarColisionesParedes();
     comprobarColisionesObstaculos();
+    comprobarColisionesParticulas();
 }
 
 void Juego::dispararParticula()
@@ -251,6 +252,25 @@ void Juego::comprobarColisionesObstaculos()
     }
 }
 
+void Juego::comprobarColisionesParticulas()
+{
+    for (int i = 0; i < particulas.size(); i++)
+    {
+        Particula* primera = particulas.at(i);
+
+        for (int j = i + 1; j < particulas.size(); j++)
+        {
+            Particula* segunda = particulas.at(j);
+
+            if (primera->detectarColision(segunda))
+            {
+                fusionarParticulas(i, j);
+                return;
+            }
+        }
+    }
+}
+
 void Juego::eliminarParticulasFueraEscenario()
 {
     for (int i = particulas.size() - 1; i >= 0; i--)
@@ -306,4 +326,106 @@ void Juego::comprobarColisionesParedes()
             }
         }
     }
+}
+
+void Juego::fusionarParticulas(int indice1, int indice2)
+{
+    Particula* primera = particulas.at(indice1);
+    Particula* segunda = particulas.at(indice2);
+
+    const qreal energiaInicial =
+        primera->calcularEnergiaCinetica() +
+        segunda->calcularEnergiaCinetica();
+
+    const qreal masa1 = primera->obtenerMasa();
+    const qreal masa2 = segunda->obtenerMasa();
+
+    const qreal masaFinal = masa1 + masa2;
+
+    const QPointF momentoInicial =
+        primera->calcularMomentoLineal() +
+        segunda->calcularMomentoLineal();
+
+    const QPointF velocidadFinal =
+        momentoInicial / masaFinal;
+
+    const qreal radio1 = primera->obtenerRadio();
+    const qreal radio2 = segunda->obtenerRadio();
+
+    const qreal radioFinal =
+        qSqrt(radio1 * radio1 + radio2 * radio2);
+
+    const QPointF posicionFinal =
+        (primera->scenePos() * masa1 +
+         segunda->scenePos() * masa2) / masaFinal;
+
+    Particula* fusionada = new Particula(
+        masaFinal,
+        radioFinal,
+        posicionFinal,
+        velocidadFinal
+        );
+
+    const QPointF momentoFinal =
+        fusionada->calcularMomentoLineal();
+
+    const qreal energiaFinal =
+        fusionada->calcularEnergiaCinetica();
+
+    const QPointF diferenciaMomento =
+        momentoFinal - momentoInicial;
+
+    const qreal energiaPerdida =
+        energiaInicial - energiaFinal;
+
+    // Retirar las particulas originales de la lista
+    particulas.removeAt(indice2);
+    particulas.removeAt(indice1);
+
+    // Retirar las particulas de la escena
+    escena->removeItem(primera);
+    escena->removeItem(segunda);
+
+    // Liberar la memoria
+    delete primera;
+    delete segunda;
+
+    // Incorporar la nueva particula
+    escena->addItem(fusionada);
+    particulas.append(fusionada);
+
+
+    qDebug() << "========== FUSION DE PARTICULAS ==========";
+
+    qDebug() << "Masa resultante:"
+             << masaFinal << "kg";
+
+    qDebug() << "Radio resultante:"
+             << radioFinal << "px";
+
+    qDebug() << "Velocidad resultante:"
+             << velocidadFinal << "m/s";
+
+    qDebug() << "Momento lineal inicial:"
+             << momentoInicial << "kg*m/s";
+
+    qDebug() << "Momento lineal final:"
+             << momentoFinal << "kg*m/s";
+
+    qDebug() << "Diferencia de momento:"
+             << diferenciaMomento << "kg*m/s";
+
+    qDebug() << "Energia inicial:"
+             << energiaInicial << "J";
+
+    qDebug() << "Energia final:"
+             << energiaFinal << "J";
+
+    qDebug() << "Energia perdida:"
+             << energiaPerdida << "J";
+
+    qDebug() << "Particulas restantes:"
+             << particulas.size();
+
+    qDebug() << "=========================================";
 }
