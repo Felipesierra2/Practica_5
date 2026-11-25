@@ -38,6 +38,13 @@ QPointF Particula::obtenerVelocidad() const
     return velocidad;
 }
 
+qreal Particula::calcularEnergiaCinetica() const
+{
+    return 0.5 * masa *
+           (velocidad.x() * velocidad.x() +
+            velocidad.y() * velocidad.y());
+}
+
 void Particula::lanzar(qreal rapidezInicial, qreal angulo)
 {
     if (lanzada)
@@ -63,4 +70,10 @@ void Particula::actualizarMovimiento(qreal deltaTiempo)
     setPos(pos() + desplazamiento * PIXELES_POR_METRO);
 
     velocidad += aceleracion * deltaTiempo;
+}
+
+void Particula::establecerVelocidad(
+    const QPointF& nuevaVelocidad)
+{
+    velocidad = nuevaVelocidad;
 }

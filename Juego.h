@@ -11,6 +11,7 @@
 #include <QGraphicsTextItem>
 
 #include "particula.h"
+#include "pared.h"
 
 class Juego : public QGraphicsView
 {
@@ -21,6 +22,7 @@ public:
 
     void crearIndicadores();
     void actualizarIndicadores();
+    void crearParedes();
 
 protected:
     void keyPressEvent(QKeyEvent* evento) override;
@@ -31,6 +33,7 @@ private:
     QElapsedTimer reloj;
 
     QList<Particula*> particulas;
+    QList<Pared*> paredes;
 
     Particula* particulaActual;
 
@@ -44,6 +47,7 @@ private:
     void dispararParticula();
     void actualizarJuego();
     void eliminarParticulasFueraEscenario();
+    void comprobarColisionesParedes();
 
     QGraphicsLineItem* indicadorLanzamiento;
     QGraphicsTextItem* informacionLanzamiento;

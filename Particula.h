@@ -12,11 +12,14 @@ public:
 
     void lanzar(qreal rapidezInicial, qreal angulo);
     void actualizarMovimiento(qreal deltaTiempo);
+    void establecerVelocidad(const QPointF& nuevaVelocidad);
 
     bool estaLanzada() const;
 
     qreal obtenerMasa() const;
     qreal obtenerRadio() const;
+    qreal calcularEnergiaCinetica() const;
+
     QPointF obtenerVelocidad() const;
 
 private:

@@ -25,9 +25,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         Juego.h Juego.cpp
         Particula.h Particula.cpp
-        Paredes.h Paredes.cpp
+
 
         Jugador.h Jugador.cpp
+        Pared.h Pared.cpp
 
     )
 # Define target properties for Android with Qt 6 as:

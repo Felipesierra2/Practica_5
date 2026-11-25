@@ -14,7 +14,11 @@ Juego::Juego(QWidget* parent)
     rapidezLanzamiento(20.0)
 {
     inicializarEscenario();
+
+    crearParedes();
+
     crearParticula();
+
     crearIndicadores();
 
     connect(temporizador, &QTimer::timeout,
@@ -102,7 +106,9 @@ void Juego::actualizarJuego()
         particula->actualizarMovimiento(deltaTiempo);
     }
 
-    eliminarParticulasFueraEscenario();
+    comprobarColisionesParedes();
+
+    // eliminarParticulasFueraEscenario();
 }
 
 void Juego::dispararParticula()
@@ -157,6 +163,41 @@ void Juego::actualizarIndicadores()
         );
 }
 
+void Juego::crearParedes()
+{
+    const QRectF limites = escena->sceneRect();
+
+    const qreal ancho = limites.width();
+    const qreal alto = limites.height();
+    const qreal grosor = 15.0;
+
+    paredes.append(new Pared(
+        QRectF(0, grosor, grosor, alto - 2 * grosor),
+        TipoPared::IZQUIERDA
+        ));
+
+    paredes.append(new Pared(
+        QRectF(ancho - grosor, grosor,
+               grosor, alto - 2 * grosor),
+        TipoPared::DERECHA
+        ));
+
+    paredes.append(new Pared(
+        QRectF(0, 0, ancho, grosor),
+        TipoPared::SUPERIOR
+        ));
+
+    paredes.append(new Pared(
+        QRectF(0, alto - grosor, ancho, grosor),
+        TipoPared::INFERIOR
+        ));
+
+    for (Pared* pared : paredes)
+    {
+        escena->addItem(pared);
+    }
+}
+
 void Juego::eliminarParticulasFueraEscenario()
 {
     for (int i = particulas.size() - 1; i >= 0; i--)
@@ -177,6 +218,39 @@ void Juego::eliminarParticulasFueraEscenario()
 
             qDebug() << "Particula eliminada."
                      << "Particulas restantes:" << particulas.size();
+        }
+    }
+}
+
+void Juego::comprobarColisionesParedes()
+{
+    for (Particula* particula : particulas)
+    {
+        for (Pared* pared : paredes)
+        {
+            if (pared->detectarColision(particula))
+            {
+                qreal energiaInicial =
+                    particula->calcularEnergiaCinetica();
+
+                pared->resolverColision(particula);
+
+                qreal energiaFinal =
+                    particula->calcularEnergiaCinetica();
+
+                qDebug() << "Colision con pared:"
+                         << static_cast<int>(pared->obtenerTipo());
+
+                qDebug() << "Energia inicial:" << energiaInicial
+                         << "J";
+
+                qDebug() << "Energia final:" << energiaFinal
+                         << "J";
+
+                qDebug() << "Diferencia:"
+                         << energiaFinal - energiaInicial
+                         << "J";
+            }
         }
     }
 }
